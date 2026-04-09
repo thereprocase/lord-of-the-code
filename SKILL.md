@@ -93,11 +93,64 @@ Deploy Gandalf (architecture) + Frodo (UX) + Aragorn (security) + Legolas (perfo
 ### The War Council (pre-release)
 Deploy all characters across the full codebase. Sauron audits coordinates, Gandalf reviews architecture, Frodo tests workflows, Aragorn checks security, Legolas profiles performance, Gimli verifies the build, Uruk-Hai hunt bugs, Gollum checks style, Ents verify tests.
 
+### The Scribe-Merge (review → fix → merge)
+
+End-to-end branch merge workflow. Deploys triage → review → writes report → fixes bugs → commits → creates MR with report attached. Works on any git repo (GitLab or GitHub). Path-agnostic and project-agnostic — works in any repo with any branch.
+
+**Invocation:** `/lord-of-the-code scribe-merge` (or `/lotc scribe-merge`) from a feature branch.
+
+**Pre-flight (before any phase):**
+- Detect base branch: run `git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null`, strip `refs/remotes/origin/` prefix. If that fails, fall back to `main`.
+- Verify current branch is NOT the base branch. If it is, stop immediately: "You're on {base}. Check out a feature branch first."
+- Use the detected base branch throughout all phases below — never hardcode `main`.
+
+**Phases:**
+
+1. **Triage** — Deploy Ent to read `git diff $(git merge-base HEAD <base>)..<current-branch>` (using detected base). Ent assesses what changed, identifies risk areas, and recommends which reviewers to deploy. Present recommendation to user for approval.
+
+2. **Review** — Deploy recommended formation (parallel where independent). Collect all findings. Produce a merged report. Create `docs/kbn-reports/` if it doesn't exist (note to user: "Created docs/kbn-reports/ — adjust location if your project uses a different convention"). Write report to `docs/kbn-reports/{branch}-merge-review.md`. Show the user the report summary and review history table.
+
+3. **Fix** — Present findings grouped by severity (critical first). Get user approval before fixing. Fix criticals and warnings. Commit fixes in logical batches — one commit per reviewer's findings, not one per bug. Format: `fix(review): address LOTC {reviewer} findings — {brief category}`. If no critical/warning findings, skip to Phase 5. **If any fix commit fails** (merge conflict, lint error, etc.), update the report with what was fixed and what was not, then pause for user input — do not proceed to Phase 5 with inconsistent state.
+
+4. **Verify** (conditional) — If Phase 3 fixes changed >5 files or touched core logic paths, re-deploy Ent to triage the *fix diff* (not the whole branch). The Ent recommends a verification formation — often different from the initial review. Run that formation. Update the report with re-review results and fix status. If fixes were minor (typos, guard clauses, comments), skip straight to Phase 5.
+
+5. **MR** — Commit the report file. Push branch to remote. Auto-detect git host: if `git remote get-url origin` contains `gitlab.com`, use `glab mr create`; if `github.com`, use `gh pr create`. If MR creation fails (auth, network, unsupported host like Bitbucket/Azure DevOps), print the error, show the branch name, and output the formatted MR body as copyable text so the user can create it manually — the report is already committed and pushed, nothing is lost. MR body format:
+
+```
+## Summary
+{1-3 bullet summary of what the branch does}
+
+## LOTC Review
+| Reviewer | Role | Findings |
+|----------|------|----------|
+| {reviewer} | {role} | {NC NW NN} — {status} |
+
+See full report: `docs/kbn-reports/{branch}-merge-review.md`
+```
+
+**Auto-detection:**
+- Git host: `gitlab.com` → `glab mr create`, `github.com` → `gh pr create`
+- Branch: `git branch --show-current`
+- Base: default branch (detect via `git symbolic-ref refs/remotes/origin/HEAD`, usually `main`)
+- Report path: `docs/kbn-reports/{branch}-merge-review.md`
+
+**Checkpoints:** User confirms after triage (Phase 1), after review (Phase 2), before fixing (Phase 3), and before MR creation (Phase 5). User can stop at any phase.
+
+**Report format** (matches existing convention in docs/kbn-reports/):
+- Header: branch, base, date, commit count, files changed, lines +/-
+- Summary: what the branch does (2-3 sentences)
+- Review history table: reviewer, role, findings count (NC NW NN), status
+- Key findings by severity with file:line references
+- Fix log: what was fixed, which commit
+- Known limitations / deferred items
+
 ## Default Behavior
 
 When the user invokes `/lord-of-the-code` with a review target but **no specific formation**, deploy an Ent as triage. The Ent reads the target code, assesses its nature and risk areas, and recommends which characters or formation to deploy. Present the Ent's recommendation to the user for confirmation before proceeding. The user can accept, override, or adjust.
 
 When the user invokes `/lord-of-the-code` with **no target and no formation**, ask what they want reviewed and which formation to use.
+
+When the user invokes `/lord-of-the-code scribe-merge`, run the Scribe-Merge formation (see above). This is a multi-phase workflow — follow the phases in order, with user checkpoints between each phase.
 
 ## Execution
 
@@ -131,6 +184,10 @@ After all characters report, the orchestrator produces a **merged report**:
 
 ## Usage
 
-When the user invokes `/lord-of-the-code`, follow Default Behavior above. If they specify a formation or character, deploy accordingly. Always use the correct model tier for each character.
+This skill responds to both `/lord-of-the-code` and `/lotc` (shorthand). All commands work identically with either name.
+
+When the user invokes `/lord-of-the-code` (or `/lotc`), follow Default Behavior above. If they specify a formation or character, deploy accordingly. Always use the correct model tier for each character.
 
 Track bug counts across Uruk-Hai waves. Display a running tally after each wave. For Horde campaigns, require 3 consecutive clean waves before declaring the code hardened, up to 15 waves per battle. If not converged, ask the user if they want another battle.
+
+**Scribe-Merge:** `/lotc scribe-merge` (or `/lord-of-the-code scribe-merge`) runs the full review → fix → merge pipeline. See The Scribe-Merge formation above for the 5-phase workflow. This is the recommended way to merge feature branches — it produces a reviewed, fixed, documented branch with a clean MR.
