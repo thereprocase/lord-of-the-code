@@ -39,6 +39,7 @@ With no arguments, an Ent triages your code and recommends which reviewers to de
 | **Legolas** | Sonnet | Performance, hot paths, memory profiling, algorithmic complexity |
 | **Gimli** | Sonnet | Build systems, dependencies, cross-platform, CI/CD |
 | **Ents** | Sonnet | Test coverage, assertion quality, test case design, **triage** |
+| **Telchar** | Sonnet | **Anvil-smith of Nogrod** — operates the local-LLM anvil MCP on behalf of a trio channel; refreshes from canonical anvil/houtini docs every invocation |
 | **Uruk-Hai** | Haiku | Adversarial bug hunting, crash finding, edge case fuzzing |
 | **Gollum** | Haiku | Style nitpicking, naming conventions, dead code, TODO tracking |
 
@@ -113,7 +114,7 @@ lord-of-the-code/
 Each character is an AI agent spawned at a specific model tier via Claude Code's Agent tool:
 
 - **Opus** (Sauron, Gandalf, Frodo) — deep, thorough analysis for critical reviews
-- **Sonnet** (Aragorn, Legolas, Gimli, Ents) — balanced analysis for implementation reviews
+- **Sonnet** (Aragorn, Legolas, Gimli, Ents, Telchar) — balanced analysis for implementation reviews; Telchar also operates the local-LLM anvil
 - **Haiku** (Uruk-Hai, Gollum) — fast and cheap, deploy in swarms for broad coverage
 
 The `install.sh` script copies agent definitions to `~/.claude/agents/` and the skill to `~/.claude/skills/lord-of-the-code/`. The `/lotc` alias is generated at install time by patching the `name` field in the SKILL.md — same content, just a shorter invocation name.
