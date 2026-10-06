@@ -4,6 +4,8 @@ A code review and implementation skill for [Claude Code](https://claude.ai/code)
 
 Project page: <https://thereprocase.github.io/projects/lord-of-the-code/>
 
+![Claude Code running /lotc three-seers: Sauron, Gandalf and Frodo launched as parallel review agents on ratelimit.py](https://thereprocase.github.io/media/lord-of-the-code/lotc-running.png)
+
 ## Installation
 
 ```bash
@@ -27,6 +29,14 @@ Restart Claude Code after installing.
 ```
 
 With no arguments, an Ent triages your code and recommends which reviewers to deploy.
+
+## What a run looks like
+
+`/lotc three-seers ratelimit.py` launches Sauron, Gandalf and Frodo as parallel background agents. Each reviewer tests its claims where it can and reports back with findings tied to file and line. The main session then merges the three reports into one list sorted by severity, removes duplicates, marks each finding VERIFIED or LIKELY, and lists where the reviewers disagreed.
+
+[![The merged Three Seers report: three critical issues, six warnings and three notes, each with a fix](https://thereprocase.github.io/media/lord-of-the-code/lotc-report.png)](https://thereprocase.github.io/media/lord-of-the-code/lotc-report.png)
+
+The run above reviewed a 34-line token-bucket limiter with planted bugs.
 
 ## Characters
 
