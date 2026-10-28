@@ -147,6 +147,10 @@ End-to-end branch merge workflow. Deploys triage → review → writes report �
 2. **Review** — Deploy recommended formation (parallel where independent). Collect all findings. Produce a merged report. Report path: if `docs/review-reports/` already exists, use it. Otherwise, ask the user where to put the report (suggest `docs/review-reports/`). Write report to `{report-dir}/{branch}-merge-review.md`. Show the user the report summary and review history table.
 
 3. **Fix** — Present findings grouped by severity (critical first). Get user approval before fixing. Fix criticals and warnings. Commit fixes in logical batches — one commit per reviewer's findings, not one per bug. Format: `fix(review): address LOTC {reviewer} findings — {brief category}`. If no critical/warning findings, skip to Phase 5. **If any fix commit fails** (merge conflict, lint error, etc.), update the report with what was fixed and what was not, then pause for user input — do not proceed to Phase 5 with inconsistent state.
+   - **Reproduce first (critical findings).** Before fixing a critical finding, a fresh agent that did not report it writes a test or script that fails on the unfixed code. If the bug does not show, mark the finding UNCONFIRMED in the report and ask the user what to do with it.
+   - **Show the fix ran.** The proof must exercise the changed lines: a test that calls the changed code directly, or a temporary marker (a log line inside the changed branch, removed before commit) that appears in the run output. Run the proof against the unfixed commit too (a worktree at the pre-fix commit); it must fail there and pass on the fix.
+   - **Results come from command output.** Record pass/fail from the runner's summary line and exit code. An agent's statement that it tested something is a claim to check.
+   - **Unclear stays unclear.** A missing, flaky or never-reached proof makes the fix INCONCLUSIVE in the report. INCONCLUSIVE fixes count as open and stop the `--auto` fast path.
 
 4. **Verify** (conditional) — If Phase 3 fixes changed >5 files or touched core logic paths, re-deploy Ent to triage the *fix diff* (not the whole branch). The Ent recommends a verification formation — often different from the initial review. Run that formation. Update the report with re-review results and fix status. If fixes were minor (typos, guard clauses, comments), skip straight to Phase 5.
 
@@ -179,7 +183,7 @@ See full report: `docs/review-reports/{branch}-merge-review.md`
 - Summary: what the branch does (2-3 sentences)
 - Review history table: reviewer, role, findings count (NC NW NN), status
 - Key findings by severity with file:line references
-- Fix log: what was fixed, which commit
+- Fix log: what was fixed, which commit, and its proof (fails before, passes after) or INCONCLUSIVE
 - Known limitations / deferred items
 
 ## Implementation Formations
