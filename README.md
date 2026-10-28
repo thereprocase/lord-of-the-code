@@ -99,7 +99,7 @@ Wave 8:  0 bugs        → clean 3/3 HARDENED
 |------|---------|
 | Thorough review of a new module | `/lotc three-seers` |
 | Bug hunt before release | `/lotc horde` |
-| API design review | `/lotc council-of-elrond` |
+| API design review | `/lotc council` |
 | Merge a feature branch | `/lotc scribe-merge` |
 | Build system audit | Deploy Gimli |
 | Performance analysis | Deploy Legolas |
@@ -113,7 +113,9 @@ Each character is an agent spawned at a specific model tier through Claude Code'
 - **Sonnet** (Aragorn, Legolas, Gimli, Ents): balanced analysis for implementation reviews
 - **Haiku** (Uruk-Hai, Gollum): fast and inexpensive, deployed in swarms for broad coverage
 
-`install.sh` copies the agent definitions to `~/.claude/agents/` and the skill to `~/.claude/skills/lord-of-the-code/`. It generates the `/lotc` alias by copying `SKILL.md` with the `name` field set to `lotc`.
+Each reviewer writes its full findings to a file in `~/.local/share/lotc/runs/<repo>-<branch>-<timestamp>/` before it replies, and the main session merges from those files. A reviewer's reply can be cut short by context limits; the file cannot. `~/.local/share/lotc/runs/latest` points at the newest run. Fix-phase proofs (test output on the pre-fix commit and on the fix) land in the same directory. Subagents cannot answer permission prompts, so a reviewer whose command is denied records the command and what it could not verify, and the merged report lists those under coverage.
+
+`install.sh` copies the agent definitions to `~/.claude/agents/` and the skill to `~/.claude/skills/lord-of-the-code/`. It generates the `/lotc` alias by copying `SKILL.md` with the `name` field set to `lotc`. If your Claude Code permission rules do not already allow writes under `~/.local/share/lotc/`, add `Write(~/.local/share/lotc/**)` to the allow list, or the reviewers' report writes will be refused in auto mode.
 
 ## Repo Structure
 
