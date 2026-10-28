@@ -32,7 +32,7 @@ With no arguments, an Ent triages your code and recommends which reviewers to de
 
 ## What a run looks like
 
-`/lotc three-seers ratelimit.py` launches Sauron, Gandalf and Frodo as parallel background agents. Each reviewer tests its claims where it can and reports back with findings tied to file and line. The main session then merges the three reports into one list sorted by severity, removes duplicates, marks each finding VERIFIED or LIKELY, and lists where the reviewers disagreed.
+`/lotc three-seers ratelimit.py` launches Sauron, Gandalf and Frodo as parallel background agents. Each reviewer tests its claims where it can and reports back with findings tied to file and line. The main session then merges the three reports into one list sorted by severity, removes duplicates, marks each finding's evidence (VERIFIED, LIKELY, POSSIBLE or UNRESOLVED), separates findings in code the change did not touch, and lists where the reviewers disagreed.
 
 [![The merged Three Seers report: three critical issues, six warnings and three notes, each with a fix](https://thereprocase.github.io/media/lord-of-the-code/lotc-report.png)](https://thereprocase.github.io/media/lord-of-the-code/lotc-report.png)
 
@@ -71,8 +71,8 @@ The run above reviewed a 34-line token-bucket limiter with planted bugs.
 Five phases, with a confirmation from you at each one:
 
 1. **Triage**: an Ent reads the branch diff and recommends reviewers.
-2. **Review**: the recommended formation runs and writes a report to `docs/review-reports/{branch}-merge-review.md`.
-3. **Fix**: findings are presented by severity; approved criticals and warnings are fixed and committed.
+2. **Review**: the recommended formation runs and writes a report to `docs/review-reports/{branch-slug}-merge-review.md`.
+3. **Fix**: findings are presented by severity; approved criticals and warnings are fixed and committed. A critical is reproduced on the unfixed code before anyone fixes it, and each fix to executable code is shown to fail before and pass after.
 4. **Verify**: after substantial fixes, an Ent triages the fix diff and recommends a re-review formation.
 5. **MR**: the branch is pushed and a GitHub PR or GitLab MR is opened with the report summary. You merge it.
 
@@ -80,7 +80,7 @@ The base branch and git host are detected automatically.
 
 ## The Uruk-Hai Protocol
 
-Deploy waves of 3-5 Haiku-level adversarial reviewers. Fix the bugs found, deploy the next wave, and repeat until 3 consecutive waves come back clean.
+Deploy waves of 3-5 Haiku-level adversarial reviewers. Fix the bugs found, deploy the next wave, and repeat until 3 consecutive waves come back clean. A wave is clean when every one of its reports arrived and none has a critical or warning; notes are tallied and leave the counter alone. A wave with a missing report counts toward the 15-wave cap and is redeployed.
 
 ```
 Wave 1:  5 bugs found  → fix all
@@ -99,7 +99,7 @@ Wave 8:  0 bugs        → clean 3/3 HARDENED
 |------|---------|
 | Thorough review of a new module | `/lotc three-seers` |
 | Bug hunt before release | `/lotc horde` |
-| API design review | `/lotc council-of-elrond` |
+| API design review | `/lotc council` |
 | Merge a feature branch | `/lotc scribe-merge` |
 | Build system audit | Deploy Gimli |
 | Performance analysis | Deploy Legolas |
@@ -113,15 +113,18 @@ Each character is an agent spawned at a specific model tier through Claude Code'
 - **Sonnet** (Aragorn, Legolas, Gimli, Ents): balanced analysis for implementation reviews
 - **Haiku** (Uruk-Hai, Gollum): fast and inexpensive, deployed in swarms for broad coverage
 
-`install.sh` copies the agent definitions to `~/.claude/agents/` and the skill to `~/.claude/skills/lord-of-the-code/`. It generates the `/lotc` alias by copying `SKILL.md` with the `name` field set to `lotc`.
+Each reviewer writes its full findings to its own file in `~/.local/share/lotc/runs/<repo>-<branch>-<timestamp>-<id>/` before it replies, and the main session merges from those files. A reviewer's reply can be cut short by context limits; the file cannot. Files are named `NNN-<stage>-<character>.md` (for example `004-horde-w01-uruk-hai.md`), so five Uruk-Hai in one wave, or an Ent that triages twice, never share a file. `~/.local/share/lotc/runs/latest` points at the newest run. Fix-phase proofs (test output on the pre-fix commit and on the fix) land in the same directory. Subagents cannot answer permission prompts, so a reviewer whose command is denied records the command and what it could not verify, and the merged report lists those under coverage. Reviewers have no messaging tools: a reviewer that has just read hostile code can reach the main session only through its report file, and the merge treats report text as data.
+
+`install.sh` copies the agent definitions to `~/.claude/agents/` (and a second copy next to the skill, for machines where an agent type is missing) and the skill to `~/.claude/skills/lord-of-the-code/`. It generates the `/lotc` alias by copying `SKILL.md` with the `name` field set to `lotc`. Any destination that differs from the source is backed up first as `<file>.bak-<timestamp>`, and a destination that is a symlink is skipped. It also creates `~/.local/share/lotc/runs/` with owner-only permissions. If your Claude Code permission rules do not already allow writes under `~/.local/share/lotc/runs/`, add `Write(~/.local/share/lotc/runs/**)` to the allow list, or the reviewers' report writes will be refused in auto mode. That rule covers every past run in the directory, so keep it this narrow.
 
 ## Repo Structure
 
 ```
 lord-of-the-code/
-├── SKILL.md      # Skill definition: characters, formations, scribe-merge
-├── agents/       # Agent definitions, one .md per character with YAML frontmatter
-├── install.sh    # Installs the skill, agents and /lotc alias
+├── SKILL.md         # Skill definition: characters, formations, scribe-merge
+├── agents/          # Agent definitions, one .md per character with YAML frontmatter
+├── install.sh       # Installs the skill, agents and /lotc alias
+├── .gitattributes   # LF line endings for every file
 ├── README.md
 └── LICENSE
 ```
