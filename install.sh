@@ -35,7 +35,9 @@ fi
 # Create target directories. The run directory is created with owner-only
 # permissions because review reports quote the code they reviewed.
 mkdir -p "$AGENTS_DIR" "$SKILL_DIR/agents" "$ALIAS_DIR" "$(dirname "$RUNS_DIR")"
-[ -d "$RUNS_DIR" ] || mkdir -m 700 "$RUNS_DIR"
+# On Windows (Git Bash) mkdir -m fails to set the mode after creating the
+# directory; the directory then inherits the user profile's permissions.
+[ -d "$RUNS_DIR" ] || mkdir -m 700 "$RUNS_DIR" 2>/dev/null || [ -d "$RUNS_DIR" ]
 
 INSTALLED=0
 UNCHANGED=0
